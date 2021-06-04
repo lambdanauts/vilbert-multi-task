@@ -1347,17 +1347,21 @@ class BertModel(BertPreTrainedModel):
         # positions we want to attend and -10000.0 for masked positions.
         # Since we are adding it to the raw scores before the softmax, this is
         # effectively the same as removing these entirely.
+        if 0 < len(list(self.parameters())):
+            data_type = torch.float64
+        else:
+            data_type = next(self.parameters()).dtype
         extended_attention_mask = extended_attention_mask.to(
-            dtype=next(self.parameters()).dtype
+            dtype=data_type
         )  # fp16 compatibility
         extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
 
         extended_attention_mask2 = extended_attention_mask2.to(
-            dtype=next(self.parameters()).dtype
+            dtype=data_type
         )  # fp16 compatibility
 
         extended_image_attention_mask = extended_image_attention_mask.to(
-            dtype=next(self.parameters()).dtype
+            dtype=data_type
         )  # fp16 compatibility
         extended_image_attention_mask = (1.0 - extended_image_attention_mask) * -10000.0
 
@@ -1371,7 +1375,7 @@ class BertModel(BertPreTrainedModel):
         # extended_co_attention_mask = co_attention_mask.unsqueeze(-1)
         extended_co_attention_mask = extended_co_attention_mask * 5.0
         extended_co_attention_mask = extended_co_attention_mask.to(
-            dtype=next(self.parameters()).dtype
+            dtype=data_type
         )  # fp16 compatibility
 
         embedding_output = self.embeddings(input_txt, token_type_ids, task_ids)
@@ -1519,7 +1523,7 @@ class BertForMultiModalPreTraining(BertPreTrainedModel):
 
                 masked_img_loss = torch.sum(
                     img_loss * (image_label == 1).unsqueeze(2).float()
-                ) / max(torch.sum((image_label == 1)), 0)
+                ) / max(torch.sum((image_label == 1)), 1.0)
             elif self.visual_target == 2:
                 # generate negative sampled index.
                 num_negative = self.num_negative
